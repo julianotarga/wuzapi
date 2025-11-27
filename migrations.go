@@ -70,6 +70,11 @@ var migrations = []Migration{
 		Name:  "add_data_json",
 		UpSQL: addDataJsonSQL,
 	},
+	{
+		ID:    9,
+		Name:  "add_days_to_sync_history",
+		UpSQL: addDaysToSyncHistorySQL,
+	},
 }
 
 const changeIDToStringSQL = `
@@ -208,6 +213,19 @@ BEGIN
     -- Add dataJson column to message_history table if it doesn't exist
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'message_history' AND column_name = 'datajson') THEN
         ALTER TABLE message_history ADD COLUMN datajson TEXT;
+    END IF;
+END $$;
+
+-- SQLite version (handled in code)
+`
+
+const addDaysToSyncHistorySQL = `
+-- PostgreSQL version
+DO $$
+BEGIN
+    -- Add days_to_sync_history column to users table if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'days_to_sync_history') THEN
+        ALTER TABLE users ADD COLUMN days_to_sync_history INTEGER DEFAULT 0;
     END IF;
 END $$;
 
@@ -432,6 +450,13 @@ func applyMigration(db *sqlx.DB, migration Migration) error {
 		if db.DriverName() == "sqlite" {
 			// Add dataJson column to message_history table for SQLite
 			err = addColumnIfNotExistsSQLite(tx, "message_history", "datajson", "TEXT")
+		} else {
+			_, err = tx.Exec(migration.UpSQL)
+		}
+	} else if migration.ID == 9 {
+		if db.DriverName() == "sqlite" {
+			// Add days_to_sync_history column to users table for SQLite
+			err = addColumnIfNotExistsSQLite(tx, "users", "days_to_sync_history", "INTEGER DEFAULT 0")
 		} else {
 			_, err = tx.Exec(migration.UpSQL)
 		}
