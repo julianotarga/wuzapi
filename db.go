@@ -147,10 +147,13 @@ func (s *server) trimMessageHistory(userID, chatJID string, limit int) error {
                 OFFSET $3
             )`
 
+		// ✅ CORREÇÃO: Usar message_id (TEXT) ao invés de id (INTEGER)
+		// A tabela whatsmeow_message_secrets.message_id é TEXT
+		// A tabela message_history.message_id também é TEXT
 		querySecrets = `
             DELETE FROM whatsmeow_message_secrets
             WHERE message_id IN (
-                SELECT id FROM message_history
+                SELECT message_id FROM message_history
                 WHERE user_id = $1 AND chat_jid = $2
                 ORDER BY timestamp DESC
                 OFFSET $3
@@ -165,10 +168,11 @@ func (s *server) trimMessageHistory(userID, chatJID string, limit int) error {
                 LIMIT -1 OFFSET ?
             )`
 
+		// ✅ CORREÇÃO: Usar message_id (TEXT) ao invés de id (INTEGER)
 		querySecrets = `
             DELETE FROM whatsmeow_message_secrets
             WHERE message_id IN (
-                SELECT id FROM message_history
+                SELECT message_id FROM message_history
                 WHERE user_id = ? AND chat_jid = ?
                 ORDER BY timestamp DESC
                 LIMIT -1 OFFSET ?
