@@ -1307,6 +1307,28 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 			} else if location := evt.Message.GetLocationMessage(); location != nil {
 				messageType = "location"
 				textContent = location.GetName()
+			} else if template := evt.Message.GetTemplateMessage(); template != nil {
+				// ✅ Template Message - Mensagens de template do WhatsApp Business
+				messageType = "text"
+				// Tentar extrair texto de diferentes formatos de template
+				if hydrated := template.GetHydratedTemplate(); hydrated != nil {
+					textContent = hydrated.GetHydratedContentText()
+					if footer := hydrated.GetHydratedFooterText(); footer != "" && textContent != "" {
+						textContent += "\n" + footer
+					}
+				} else if hydrated := template.GetHydratedFourRowTemplate(); hydrated != nil {
+					textContent = hydrated.GetHydratedContentText()
+					if footer := hydrated.GetHydratedFooterText(); footer != "" && textContent != "" {
+						textContent += "\n" + footer
+					}
+				} else if interactive := template.GetInteractiveMessageTemplate(); interactive != nil {
+					if body := interactive.GetBody(); body != nil {
+						textContent = body.GetText()
+					}
+				}
+				if textContent == "" {
+					textContent = "[Mensagem de Template]"
+				}
 			}
 
 			// Extract text content for non-reaction and non-delete messages
@@ -1557,6 +1579,27 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 							textContent = reaction.GetText()
 							if key := reaction.GetKey(); key != nil {
 								quotedMessageID = key.GetID()
+							}
+						} else if template := message.GetTemplateMessage(); template != nil {
+							// ✅ Template Message - Mensagens de template do WhatsApp Business
+							messageType = "text"
+							if hydrated := template.GetHydratedTemplate(); hydrated != nil {
+								textContent = hydrated.GetHydratedContentText()
+								if footer := hydrated.GetHydratedFooterText(); footer != "" && textContent != "" {
+									textContent += "\n" + footer
+								}
+							} else if hydrated := template.GetHydratedFourRowTemplate(); hydrated != nil {
+								textContent = hydrated.GetHydratedContentText()
+								if footer := hydrated.GetHydratedFooterText(); footer != "" && textContent != "" {
+									textContent += "\n" + footer
+								}
+							} else if interactive := template.GetInteractiveMessageTemplate(); interactive != nil {
+								if body := interactive.GetBody(); body != nil {
+									textContent = body.GetText()
+								}
+							}
+							if textContent == "" {
+								textContent = "[Mensagem de Template]"
 							}
 						}
 
